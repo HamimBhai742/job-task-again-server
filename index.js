@@ -33,8 +33,54 @@ async function run() {
         })
 
         app.get('/products', async (req, res) => {
-            const result = await productCollection.find().toArray()
+            const all = req.query
+            console.log(all);
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
+            const minPrice = parseInt(all.minPrice) || 0
+            const maxPrice = parseInt(all.maxPrice) || Infinity
+            // const search = req.query.search
+            const query = {
+                productPrice: {
+                    $lte: maxPrice, $gte: minPrice
+                }
+            }
+            // console.log(f);
+            // console.log(page, size);
+            // console.log(query);
+            const result = await productCollection.find(query)
+            .skip(page * size)
+            .limit(size)
+            .toArray()
             res.send(result)
+        })
+
+        app.get('/productsPage', async (req, res) => {
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
+            const result = await productCollection.find()
+                .skip(page * size)
+                .limit(size)
+                .toArray()
+
+            res.send(result)
+        })
+
+        app.get('/searchProduct', async (req, res) => {
+            const search = req.query.search
+            const query = {
+                productName: {
+                    "$regex": search, "$options": "i"
+                }
+            }
+            const result = await productCollection.find(query)
+                .toArray()
+
+            res.send(result)
+        })
+        app.get('/productsCount', async (req, res) => {
+            const count = await productCollection.estimatedDocumentCount()
+            res.send({ count })
         })
 
         await client.db("admin").command({ ping: 1 });
