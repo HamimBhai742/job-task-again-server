@@ -62,16 +62,26 @@ async function run() {
 
         app.get('/productsPage', async (req, res) => {
             const sorts = req.query
-            const sortsHinh = req.query
-            console.log(sorts);
-            console.log(sortsHinh);
             const query = {}
-            // if()
-            const options = {
-                sort: {
-                    productPrice: sorts.sort === 'asc' ? 1 : -1
+            let options = {}
+            if (sorts.sorting === 'asc') {
+                options.sort = {
+                    productPrice: 1
+                }
+
+            }
+            else if (sorts.sorting === 'desc') {
+                options.sort = {
+                    productPrice: -1
+                }
+
+            }
+            else if (sorts.sorting === 'recently') {
+                options.sort = {
+                    productAddingTime: -1
                 }
             }
+
             const page = parseInt(req.query.page)
             const size = parseInt(req.query.size)
             const result = await productCollection.find(query, options)
