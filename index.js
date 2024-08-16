@@ -33,32 +33,48 @@ async function run() {
         })
 
         app.get('/products', async (req, res) => {
+            const result = await productCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/productsCategorization', async (req, res) => {
             const all = req.query
             console.log(all);
-            const page = parseInt(req.query.page)
-            const size = parseInt(req.query.size)
+            const brandName = all.brandName
+            const productCategory = all.productCategory
             const minPrice = parseInt(all.minPrice) || 0
             const maxPrice = parseInt(all.maxPrice) || Infinity
-            // const search = req.query.search
             const query = {
+                brandName: {
+                    "$regex": brandName, "$options": "i"
+                },
+                productCategory: {
+                    "$regex": productCategory, "$options": "i"
+                },
                 productPrice: {
                     $lte: maxPrice, $gte: minPrice
                 }
             }
-            // console.log(f);
-            // console.log(page, size);
-            // console.log(query);
-            const result = await productCollection.find(query)
-            .skip(page * size)
-            .limit(size)
-            .toArray()
+
+            const result = await productCollection.find(query).toArray()
             res.send(result)
         })
 
         app.get('/productsPage', async (req, res) => {
+            const sorts = req.query
+            const sortsHinh = req.query
+            console.log(sorts);
+            console.log(sortsHinh);
+            const query = {}
+            // if()
+            const options = {
+                sort: {
+                    productPrice: sorts.sort === 'asc' ? 1 : -1
+                }
+            }
             const page = parseInt(req.query.page)
             const size = parseInt(req.query.size)
-            const result = await productCollection.find()
+            const result = await productCollection.find(query, options)
                 .skip(page * size)
                 .limit(size)
                 .toArray()
@@ -82,6 +98,7 @@ async function run() {
             const count = await productCollection.estimatedDocumentCount()
             res.send({ count })
         })
+
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
