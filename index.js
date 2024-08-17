@@ -39,7 +39,6 @@ async function run() {
 
         app.get('/productsCategorization', async (req, res) => {
             const all = req.query
-            console.log(all);
             const brandName = all.brandName
             const productCategory = all.productCategory
             const minPrice = parseInt(all.minPrice) || 0
@@ -113,8 +112,6 @@ async function run() {
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
     }
 }
 run().catch(console.dir);
