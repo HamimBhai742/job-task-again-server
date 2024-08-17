@@ -78,7 +78,7 @@ async function run() {
             }
             else if (sorts.sorting === 'recently') {
                 options.sort = {
-                    productAddingTime: -1
+                    productDaTa: -1
                 }
             }
 
