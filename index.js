@@ -5,6 +5,15 @@ const port = process.env.PROT || 3000
 app.use(express.json());
 app.use(cors())
 
+const corsConfig = {
+    origin: '',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+}
+
+app.use(cors(corsConfig))
+app.options("", cors(corsConfig))
+
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://job_task_again:ScFC0UHSyRLHKDOc@cluster0.bls3tyg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -19,7 +28,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         const database = client.db("productsDB");
         const productCollection = database.collection("products");
 
