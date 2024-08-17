@@ -3,16 +3,16 @@ const app = express()
 const cors = require('cors')
 const port = process.env.PROT || 3000
 app.use(express.json());
-app.use(cors())
+require('dotenv').config()
 
-const corsConfig = {
-    origin: '',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-}
-
-app.use(cors(corsConfig))
-app.options("", cors(corsConfig))
+app.use(cors({
+    origin: [
+        "http://localhost:5173",
+        "https://job-task-again.firebaseapp.com",
+        "https://job-task-again.web.app",
+        // "https://cardoctor-bd.firebaseapp.com",
+    ]
+}))
 
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
