@@ -15,7 +15,7 @@ app.use(cors({
 }))
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://job_task_again:ScFC0UHSyRLHKDOc@cluster0.bls3tyg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const client = new MongoClient(uri, {
@@ -31,6 +31,7 @@ async function run() {
         // await client.connect();
         const database = client.db("productsDB");
         const productCollection = database.collection("products");
+        const cartCollection = database.collection("myCarts");
 
         app.post('/products', async (req, res) => {
             const product = req.body
@@ -38,8 +39,63 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/add-to-cart', async (req, res) => {
+            const carts = req.body
+            const result = await cartCollection.insertOne(carts);
+            res.send(result)
+        })
+
+        app.patch('/add-to-cart/:id', async (req, res) => {
+            const id = req.params.id
+            const price = parseFloat(req.query.price)
+            const qty = parseInt(req.query.qty)
+            console.log(qty);
+            const filter = { _id: new ObjectId(id) };
+            console.log(price);
+            const updateDoc = {
+                $set: {
+                    productPrice: price,
+                    productQuantity: qty
+                },
+            };
+            const result = await cartCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
+
+        app.patch('/deletPro/:id', async (req, res) => {
+            const id = req.params.id
+            const price = parseFloat(req.query.price)
+            const qty = parseInt(req.query.qty)
+            console.log(qty);
+            const filter = { _id: new ObjectId(id) };
+            console.log(price);
+            const updateDoc = {
+                $set: {
+                    productPrice: price,
+                    productQuantity: qty
+                },
+            };
+            console.log(updateDoc);
+            const result = await cartCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
+
+        app.delete('/deletePro/:id', async (req, res) => {
+            const id = req.params.id
+            const query = {
+                _id: new ObjectId(id)
+            }
+            const result = await cartCollection.deleteOne(query)
+            res.send(result)
+        })
+
         app.get('/products', async (req, res) => {
             const result = await productCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/my-carts', async (req, res) => {
+            const result = await cartCollection.find().toArray()
             res.send(result)
         })
 
