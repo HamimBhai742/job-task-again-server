@@ -3,6 +3,8 @@ const app = express()
 const cors = require('cors')
 const port = process.env.PROT || 3000
 app.use(express.json());
+const { v4: uuidv4 } = require('uuid')
+app.use(express.urlencoded());
 require('dotenv').config()
 
 app.use(cors({
@@ -16,6 +18,7 @@ app.use(cors({
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { default: axios } = require('axios');
 const uri = "mongodb+srv://job_task_again:ScFC0UHSyRLHKDOc@cluster0.bls3tyg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const client = new MongoClient(uri, {
@@ -32,7 +35,16 @@ async function run() {
         const database = client.db("productsDB");
         const productCollection = database.collection("products");
         const cartCollection = database.collection("myCarts");
+        const paymentCollection = database.collection("myPayments");
+        const stepsCollection = database.collection("myStep");
 
+
+        function generateTransactionID() {
+            return 'txn_' + uuidv4(4).split('-')[0];
+        }
+
+        // console.log(timeAndDate);
+        // console.log(transactionID);
         app.post('/products', async (req, res) => {
             const product = req.body
             const result = await productCollection.insertOne(product);
@@ -43,6 +55,139 @@ async function run() {
             const carts = req.body
             const result = await cartCollection.insertOne(carts);
             res.send(result)
+        })
+
+        app.post('/pay-setp', async (req, res) => {
+            const stp = req.body
+            const result = await stepsCollection.insertOne(stp);
+            res.send(result)
+        })
+
+        app.post('/payment', async (req, res) => {
+            const transactionID = generateTransactionID();
+            const payInfo = req.body
+            // const result = await cartCollection.insertOne(carts);
+            const paymentInit = {
+                store_id: process.env.STORE_ID,
+                store_passwd: process.env.STORE_PASS,
+                total_amount: payInfo.amount,
+                currency: 'USD',
+                tran_id: transactionID,
+                success_url: `http://localhost:3000/success-payment?email=${payInfo.email}`,
+                fail_url: 'http://localhost:3000/fail-payment',
+                cancel_url: 'http://localhost:3000/cancel-payment',
+                cus_name: payInfo.cardHolder,
+                cus_email: payInfo.email,
+                cus_add1: payInfo.billingAddress,
+                cus_city: 'Dhaka',
+                cus_state: payInfo.state,
+                cus_postcode: payInfo.ZIP,
+                cus_country: 'Bangladesh',
+                cus_phone: '01711111111',
+                cus_fax: '01711111111&',
+                shipping_method: 'NO',
+                ship_name: payInfo.cardHolder,
+                ship_add1: payInfo.billingAddress,
+                ship_city: 'Dhaka',
+                ship_state: payInfo.state,
+                ship_postcode: payInfo.ZIP,
+                ship_country: 'Bangladesh',
+                product_name: 'E-commerce',
+                product_category: 'E-commerce',
+                product_profile: 'general',
+                multi_card_name: 'mastercard,visacard,amexcard&',
+                value_a: 'ref001_A&',
+                value_b: 'ref002_B&',
+                value_c: 'ref003_C&',
+                value_d: 'ref004_D'
+
+            }
+            const timeAndDate = new Date().toLocaleString()
+            const payMentInfo = {
+                cusEmail: payInfo.email,
+                cusName: payInfo.cardHolder,
+                payStatus: 'Pending',
+                amount: payInfo.amount,
+                transactionID,
+                timeAndDate,
+            }
+
+            const cretePay = await paymentCollection.insertOne(payMentInfo)
+
+            const result = await axios({
+                method: 'POST',
+                url: 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
+                data: paymentInit,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+
+            console.log(result);
+            res.send({
+                paymentUrl: result.data.GatewayPageURL
+            })
+        })
+
+        app.post('/success-payment', async (req, res) => {
+            const payment = req.body
+            const email = req.query.email
+            console.log('success', payment);
+
+
+            const query = { myEmail: { $regex: email } };
+            const result = await cartCollection.deleteMany(query);
+            console.log(result);
+
+            const filter = { transactionID: payment.tran_id };
+            const updateDoc = {
+                $set: {
+                    payStatus: 'Success',
+                    cardType: payment.card_issuer
+                },
+            };
+            const resUp = await paymentCollection.updateOne(filter, updateDoc)
+            console.log(resUp);
+
+            const stpFi = { stepEmail: email }
+            const upStpDoc = {
+                $set: {
+                    status: 'success'
+                },
+            };
+            const resStep = await stepsCollection.updateOne(stpFi, upStpDoc)
+
+            res.redirect('http://localhost:5173/payment/success')
+        })
+
+        app.post('/fail-payment', async (req, res) => {
+            const payment = req.body
+            const filter = { transactionID: payment.tran_id };
+            const updateDoc = {
+                $set: {
+                    payStatus: 'Failed',
+                    cardType: payment.card_issuer
+                },
+            };
+            const resUp = await paymentCollection.updateOne(filter, updateDoc)
+            console.log(resUp);
+            // console.log('fail', payment);
+            res.redirect('http://localhost:5173/payment/fail')
+        })
+
+        app.post('/cancel-payment', async (req, res) => {
+            const payment = req.body
+            const filter = { transactionID: payment.tran_id };
+            const updateDoc = {
+                $set: {
+                    payStatus: 'Cancel',
+                    cardType: payment.card_issuer
+                },
+            };
+            const resUp = await paymentCollection.updateOne(filter, updateDoc)
+            console.log(resUp);
+
+            res.redirect('http://localhost:5173/payment/cancel')
         })
 
         app.patch('/add-to-cart/:id', async (req, res) => {
@@ -89,13 +234,41 @@ async function run() {
             res.send(result)
         })
 
+        app.delete('/pay-step', async (req, res) => {
+            const email = req.query.email
+            const query = {
+                stepEmail: email
+            }
+            const result = await stepsCollection.deleteOne(query)
+            res.send(result)
+        })
+
         app.get('/products', async (req, res) => {
             const result = await productCollection.find().toArray()
             res.send(result)
         })
 
+        app.get('/pay-setp', async (req, res) => {
+            const result = await stepsCollection.find().toArray()
+            res.send(result)
+        })
+
         app.get('/my-carts', async (req, res) => {
-            const result = await cartCollection.find().toArray()
+            const email = req.query.email
+            const query = {
+                myEmail: email
+            }
+            const result = await cartCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.get('/payment-his', async (req, res) => {
+            const email = req.query.email
+            console.log('object', email);
+            const query = {
+                cusEmail: email
+            }
+            const result = await paymentCollection.find(query).toArray()
             res.send(result)
         })
 
