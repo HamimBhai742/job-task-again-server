@@ -37,6 +37,7 @@ async function run() {
         const cartCollection = database.collection("myCarts");
         const paymentCollection = database.collection("myPayments");
         const stepsCollection = database.collection("myStep");
+        const userCollection = database.collection("user");
 
 
         function generateTransactionID() {
@@ -45,6 +46,13 @@ async function run() {
 
         // console.log(timeAndDate);
         // console.log(transactionID);
+        app.post('/user', async (req, res) => {
+            const user = req.body
+            console.log(user);
+            const result = await userCollection.insertOne(user);
+            res.send(result)
+        })
+
         app.post('/products', async (req, res) => {
             const product = req.body
             const result = await productCollection.insertOne(product);
@@ -106,6 +114,7 @@ async function run() {
             const payMentInfo = {
                 cusEmail: payInfo.email,
                 cusName: payInfo.cardHolder,
+                cusImg: payInfo.imgCu,
                 payStatus: 'Pending',
                 amount: payInfo.amount,
                 transactionID,
@@ -253,6 +262,11 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/user', async (req, res) => {
+            const result = await userCollection.find().toArray()
+            res.send(result)
+        })
+
         app.get('/my-carts', async (req, res) => {
             const email = req.query.email
             const query = {
@@ -263,12 +277,12 @@ async function run() {
         })
 
         app.get('/payment-his', async (req, res) => {
-            const email = req.query.email
-            console.log('object', email);
-            const query = {
-                cusEmail: email
-            }
-            const result = await paymentCollection.find(query).toArray()
+            // const email = req.query.email
+            // console.log('object', email);
+            // const query = {
+            //     cusEmail: email
+            // }
+            const result = await paymentCollection.find().toArray()
             res.send(result)
         })
 
