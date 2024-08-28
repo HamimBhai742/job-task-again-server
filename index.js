@@ -81,9 +81,9 @@ async function run() {
                 total_amount: payInfo.amount,
                 currency: 'USD',
                 tran_id: transactionID,
-                success_url: `https://job-task-again-server.vercel.app/success-payment?email=${payInfo.email}`,
-                fail_url: 'https://job-task-again-server.vercel.app/fail-payment',
-                cancel_url: 'https://job-task-again-server.vercel.app/cancel-payment',
+                success_url: `http://localhost:3000/success-payment?email=${payInfo.email}`,
+                fail_url: 'http://localhost:3000/fail-payment',
+                cancel_url: 'http://localhost:3000/cancel-payment',
                 cus_name: payInfo.cardHolder,
                 cus_email: payInfo.email,
                 cus_add1: payInfo.billingAddress,
@@ -111,6 +111,7 @@ async function run() {
 
             }
             const timeAndDate = new Date().toLocaleString()
+            console.log(timeAndDate);
             const payMentInfo = {
                 cusEmail: payInfo.email,
                 cusName: payInfo.cardHolder,
