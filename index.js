@@ -286,6 +286,16 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/my-products', async (req, res) => {
+            const email=req.query.email
+            console.log(email,'email')
+            const query={
+                email:email
+            }
+            const result = await productCollection.find(query).toArray()
+            res.send(result)
+        })
+
         app.get('/pay-setp', async (req, res) => {
             const result = await stepsCollection.find().toArray()
             res.send(result)
