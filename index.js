@@ -10,9 +10,9 @@ require('dotenv').config()
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        "https://job-task-again.firebaseapp.com",
-        "https://job-task-again.web.app",
-        // "https://cardoctor-bd.firebaseapp.com",
+        // "https://job-task-again.firebaseapp.com",
+        // "https://job-task-again.web.app",
+        // "https://api.imgbb.com/1/upload?key=a75a548002dffac761e4e30f05a1fb4e",
     ]
 }))
 
@@ -214,6 +214,34 @@ async function run() {
                 },
             };
             const result = await cartCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
+
+        app.patch('/seller/active/:id', async (req, res) => {
+            const id = req.params.id
+            const query = {
+                _id: new ObjectId(id)
+            }
+            const updateDoc = {
+                $set: {
+                    status: 'success'
+                },
+            };
+            const result = await userCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        app.patch('/seller/block/:id', async (req, res) => {
+            const id = req.params.id
+            const query = {
+                _id: new ObjectId(id)
+            }
+            const updateDoc = {
+                $set: {
+                    status: 'pending'
+                },
+            };
+            const result = await userCollection.updateOne(query, updateDoc)
             res.send(result)
         })
 
