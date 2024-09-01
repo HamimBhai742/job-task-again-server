@@ -263,6 +263,26 @@ async function run() {
             res.send(result)
         })
 
+            app.patch("/update-my-product/:id", async (req, res) => {
+                const id = req.params.id;
+                const products= req.body;
+              const filter = { _id: new ObjectId(id) };
+            //   console.log(price);
+              const updateDoc = {
+                $set: {
+                  productName: products?.productName,
+                  brandName: products?.brandName,
+                  productQuantity: products?.productQuantity,
+                  productPrice: products?.productPrice,
+                  productRating: products?.productRating,
+                  productDescription: products?.productDescription,
+                },
+              };
+            //   console.log(updateDoc);
+              const result = await productCollection.updateOne(filter, updateDoc);
+              res.send(result);
+            });
+
         app.delete('/deletePro/:id', async (req, res) => {
             const id = req.params.id
             const query = {
@@ -271,6 +291,15 @@ async function run() {
             const result = await cartCollection.deleteOne(query)
             res.send(result)
         })
+
+          app.delete("/my-product/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = {
+              _id: new ObjectId(id),
+            };
+            const result = await productCollection.deleteOne(query);
+            res.send(result);
+          });
 
         app.delete('/pay-step', async (req, res) => {
             const email = req.query.email
