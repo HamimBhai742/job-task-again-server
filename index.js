@@ -1,3 +1,4 @@
+// import { GoogleGenAI } from "@google/genai";
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -6,15 +7,16 @@ app.use(express.json());
 const { v4: uuidv4 } = require("uuid");
 app.use(express.urlencoded());
 require("dotenv").config();
+const GoogleGenAI = require("@google/genai").GoogleGenAI;
 
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
       "http://localhost:5174",
-      // "https://job-task-again.firebaseapp.com",
-      // "https://job-task-again.web.app",
-      // "https://api.imgbb.com/1/upload?key=a75a548002dffac761e4e30f05a1fb4e",
+      "https://job-task-again.firebaseapp.com",
+      "https://job-task-again.web.app",
+      "https://api.imgbb.com/1/upload?key=a75a548002dffac761e4e30f05a1fb4e",
     ],
   })
 );
@@ -41,10 +43,44 @@ async function run() {
     const paymentCollection = database.collection("myPayments");
     const stepsCollection = database.collection("myStep");
     const userCollection = database.collection("user");
+    const chatCollection = database.collection("myChat");
 
     function generateTransactionID() {
       return "txn_" + uuidv4(4).split("-")[0];
     }
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API });
+
+    //Chat With Gimini
+    app.post("/chat", async (req, res) => {
+      const { message, email } = req.body;
+      console.log(message);
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: message,
+      });
+      const botMessage = {
+        message: response.text,
+        timeStamp: new Date(),
+        sender: "Bot",
+        email
+      };
+      const userMessage = {
+        message,
+        timeStamp: new Date(),
+        sender: "You",
+        email,
+      };
+      const result = await chatCollection.insertMany([userMessage, botMessage]);
+      res.send(result);
+      console.log(response.text);
+    });
+
+    //Chat With Gimini
+    app.get("/chat", async (req, res) => {
+      const query = { email: req.query.email };
+      const result = await chatCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // console.log(timeAndDate);
     // console.log(transactionID);
@@ -83,9 +119,9 @@ async function run() {
         total_amount: payInfo.amount,
         currency: "USD",
         tran_id: transactionID,
-        success_url: `http://localhost:3000/success-payment?email=${payInfo.email}`,
-        fail_url: "http://localhost:3000/fail-payment",
-        cancel_url: "http://localhost:3000/cancel-payment",
+        success_url: `https://job-task-again-server.vercel.app/success-payment?email=${payInfo.email}`,
+        fail_url: "https://job-task-again-server.vercel.app/fail-payment",
+        cancel_url: "https://job-task-again-server.vercel.app/cancel-payment",
         cus_name: payInfo.cardHolder,
         cus_email: payInfo.email,
         cus_add1: payInfo.billingAddress,
